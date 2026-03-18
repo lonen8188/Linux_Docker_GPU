@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6">
+            <div id="itemCarousel" class="carousel slide shadow" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    {% if item.images %}
+                        {% for img_path in item.images %}
+                        <div class="carousel-item {{ 'active' if loop.first }}">
+                            <img src="/uploads/{{ img_path }}" class="d-block w-100"
+                                 style="height: 500px; object-fit: contain; background-color: #f8f9fa;">
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="carousel-item active">
+                            <img src="http://placehold.co/600x600?text=No+Image" class="d-block w-100">
+                        </div>
+                    {% endif %}
+                </div>
+
+                {% if item.images|length > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#itemCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#itemCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+       <div class="col-md-6">
+            <div class="ps-lg-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('item_list') }}">목록</a></li>
+                        <li class="breadcrumb-item active">{{ item.category }}</li>
+                    </ol>
+                </nav>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="fw-bold mb-0">{{ item.name }}</h2>
+
+                    {% if session.get('user_role') in ['admin', 'manager'] %}
+                    <div class="btn-group">
+                        <a href="/items/edit/{{ item.id }}" class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-pencil"></i> 수정
+                        </a>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteItem()">
+                            <i class="bi bi-trash"></i> 삭제
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <p class="text-muted mb-4">상품코드: {{ item.code }}</p>
+                <h3 class="text-primary mb-4">{{ "{:,}".format(item.price) }}원</h3>
+
+                <hr>
+
+                <div class="mb-4">
+                    <h5>상품 설명</h5>
+                    <p>재고 수량: <span class="badge bg-{{ 'success' if item.stock > 0 else 'danger' }}">
+                        {{ item.stock }}개 남음
+                    </span></p>
+                </div>
+
+
+
+                <form id="purchaseForm" method="post">
+                    <div class="input-group mb-3" style="width: 170px;">
+                        <button class="btn btn-outline-secondary" type="button" onclick="changeQty(-1)">-</button>
+                        <input type="number" name="quantity" id="quantity" class="form-control text-center" value="1" min="1" max="{{ item.stock }}">
+                        <button class="btn btn-outline-secondary" type="button" onclick="changeQty(1)">+</button>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-block">
+                        <button type="button" class="btn btn-primary btn-lg px-5" onclick="sendTo('order')">바로 구매하기</button>
+
+                        <button type="button" class="btn btn-outline-secondary btn-lg px-5" onclick="sendTo('cart')">장바구니 담기</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+// 수량 조절 함수
+function changeQty(num) {
+    const qtyInput = document.getElementById('quantity');
+    let currentQty = parseInt(qtyInput.value);
+    if (currentQty + num >= 1 && currentQty + num <= {{ item.stock }}) {
+        qtyInput.value = currentQty + num;
+    }
+}
+
+// 버튼 클릭 시 목적지에 따라 action 주소를 바꿔서 전송하는 함수
+function sendTo(goal) {
+    const form = document.getElementById('purchaseForm');
+    const itemId = "{{ item.id }}";
+
+    if (goal === 'order') {
+        form.action = "/order/" + itemId;
+    } else {
+        form.action = "/cart/add/" + itemId;
+    }
+    form.submit();
+}
+
+// 삭제용 코드
+function deleteItem() {
+    if(confirm('정말로 이 상품을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) {
+        // 실제 삭제 라우트로 이동 (아직 안 만들었다면 404가 뜨겠지만 구조는 이렇습니다)
+        location.href = "/items/delete/{{ item.id }}";
+    }
+}
+</script>
+{% endblock %}

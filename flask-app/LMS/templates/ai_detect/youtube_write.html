@@ -1,0 +1,98 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-sm mx-auto" style="max-width: 600px;">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0"><i class="bi bi-youtube"></i> YouTube AI 분석 요청</h4>
+        </div>
+        <div class="card-body">
+            <form id="ytForm">
+                <div class="mb-3">
+                    <label class="form-label">분석 제목</label>
+                    <input type="text" name="title" class="form-control" placeholder="예: 운동 영상 분석" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">YouTube URL</label>
+                    <input type="url" name="yt_url" class="form-control"
+                           placeholder="https://www.youtube.com/watch?v=..." required>
+                    <div class="form-text text-muted">분석하고 싶은 유튜브 주소를 복사해서 넣어주세요.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">상세 설명</label>
+                    <textarea name="content" class="form-control" rows="2"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-danger w-100" id="subBtn">유튜브 다운로드 및 분석 시작</button>
+            </form>
+
+            <div id="ytLoading" class="text-center mt-3" style="display:none;">
+                <div class="progress mb-3" style="height: 25px;">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+                         role="progressbar" style="width: 0%;">0%</div>
+                </div>
+                <p id="progressMsg" class="fw-bold text-danger">서버와 연결 중입니다...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 세션에서 유저 ID 가져오기 (없으면 guest)
+const currentUserId = "{{ session.get('user_id', 'guest') }}";
+
+// 1. 진행률을 주기적으로 체크하는 함수
+function checkProgress() {
+    fetch(`/ai-detect/progress?user_id=${currentUserId}`)
+        .then(res => res.json())
+        .then(data => {
+            const bar = document.getElementById('progressBar');
+            const msg = document.getElementById('progressMsg');
+
+            // 그래프와 메시지 업데이트
+            bar.style.width = data.percent + '%';
+            bar.innerText = data.percent + '%';
+            msg.innerText = data.message;
+
+            if (data.percent < 100) {
+                setTimeout(checkProgress, 1000); // 1초마다 다시 확인
+            } else {
+                msg.innerHTML = "분석이 완료되었습니다! 잠시 후 이동합니다.";
+                // 분석 완료 후 2초 뒤에 목록이나 결과 페이지로 이동 (선택 사항)
+                setTimeout(() => { location.href = "/ai-detect/video"; }, 2000);
+            }
+        })
+        .catch(err => console.error("진행률 확인 중 오류:", err));
+}
+
+// 2. 폼 제출 시 실행되는 로직
+document.getElementById('ytForm').onsubmit = function(e) {
+    e.preventDefault(); // 폼의 기본 제출(페이지 이동)을 막습니다.
+
+    const subBtn = document.getElementById('subBtn');
+    const loadingDiv = document.getElementById('ytLoading');
+
+    subBtn.disabled = true;
+    this.style.display = 'none'; // 입력창 숨기기
+    loadingDiv.style.display = 'block'; // 게이지 영역 보이기
+
+    const formData = new FormData(this);
+    formData.append('user_id', currentUserId); // currentUserId는 상단에 정의됨
+
+    fetch('/ai-detect/youtube/process', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success') {
+            checkProgress(); //  드디어 실시간 게이지 시작!
+        } else {
+            alert("오류: " + data.msg);
+            location.reload();
+        }
+    });
+};
+</script>
+{% endblock %}

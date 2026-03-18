@@ -1,0 +1,22 @@
+sudo apt install python3-pip python3-venv git -y
+lspci | grep -i nvidia
+sudo ubuntu-drivers autoinstall
+nvidia-smi
+pip install torch torchvision torchaudio
+pip install jupyterlab
+jupyter lab --ip=0.0.0.0 --port=8888 --no-browser
+
+방화벽 열기 8888
+
+토큰없이 암호로 접근
+jupyter server password 
+
+백그라운드로 실행
+jupyter lab --ip=0.0.0.0 --port=8888 --no-browser &
+
+강제 프로세서 중지 
+pkill -f jupyter
+
+
+주피터 허브 설치
+

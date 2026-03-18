@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>주문 상세 내역 <small class="text-muted">#{{ order.id }}</small></h2>
+        <a href="/orders" class="btn btn-outline-secondary">목록으로</a>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white fw-bold">주문 정보</div>
+        <div class="card-body">
+            <p class="mb-1"><strong>주문 일시:</strong> {{ order.created_at }}</p>
+            <p class="mb-0"><strong>총 결제 금액:</strong> <span class="text-primary fs-5 fw-bold">{{ "{:,}".format(order.total_price) }}원</span></p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-middle border-top">
+            <thead class="table-light">
+                <tr>
+                    <th colspan="2">상품 정보</th>
+                    <th>단가</th>
+                    <th>수량</th>
+                    <th class="text-end">소계</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td style="width: 80px;">
+                        {% if item.main_image %}
+                        <img src="/uploads/{{ item.main_image }}" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                        <img src="http://placehold.co/60x60" class="img-thumbnail">
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="fw-bold">{{ item.name }}</div>
+                        <small class="text-muted">{{ item.code }}</small>
+                    </td>
+                    <td>{{ "{:,}".format(item.price) }}원</td>
+                    <td>{{ item.qty }}개</td>
+                    <td class="text-end fw-bold">{{ "{:,}".format(item.price * item.qty) }}원</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-light">
+                    <td colspan="4" class="text-end fw-bold">최종 결제 금액</td>
+                    <td class="text-end text-primary fs-5 fw-bold">{{ "{:,}".format(order.total_price) }}원</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8">
+        <div class="card border-0 shadow">
+            <div class="card-header bg-warning py-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-pencil-square"></i> 자료 수정하기</h5>
+            </div>
+            <div class="card-body p-4">
+                <form action="/filesboard/edit/{{ post.id }}" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">제목</label>
+                        <input type="text" name="title" class="form-control" value="{{ post.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">내용</label>
+                        <textarea name="content" class="form-control" rows="8" required>{{ post.content }}</textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">현재 첨부된 파일</label>
+                        {% if files %}
+                        <ul class="list-group mb-2">
+                            {% for file in files %}
+                            <li class="list-group-item list-group-item-light small">
+                                <i class="bi bi-file-earmark"></i> {{ file.origin_name }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted small">첨부된 파일이 없습니다.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-danger">파일 새로 올리기 (교체)</label>
+                        <input type="file" name="files" class="form-control" multiple>
+                        <div class="form-text">새 파일을 선택하면 **기존의 모든 파일이 삭제**되고 대체됩니다.</div>
+                    </div>
+
+                    <hr>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-warning px-4 fw-bold">수정 완료</button>
+                        <a href="/filesboard/view/{{ post.id }}" class="btn btn-outline-secondary px-4">취소</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

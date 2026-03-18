@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h4 class="mb-0 fw-bold"><i class="bi bi-pencil-square"></i> 상품 정보 수정</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form action="/items/edit/{{ item.id }}" method="post" enctype="multipart/form-data">
+                        
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label fw-semibold">상품명</label>
+                                <input type="text" name="name" class="form-control" value="{{ item.name }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">상품코드</label>
+                                <input type="text" name="code" class="form-control" value="{{ item.code }}" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">판매 가격 (원)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₩</span>
+                                    <input type="number" name="price" class="form-control" value="{{ item.price }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">재고 수량</label>
+                                <div class="input-group">
+                                    <input type="number" name="stock" class="form-control" value="{{ item.stock }}" required>
+                                    <span class="input-group-text">개</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">카테고리</label>
+                                <input type="text" name="category" class="form-control" value="{{ item.category }}">
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="col-12">
+                                <label class="form-label fw-semibold d-block">현재 등록된 이미지</label>
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    {% if item.images %}
+                                        {% for img in item.images %}
+                                        <div class="position-relative">
+                                            <img src="/uploads/{{ img }}" class="img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;">
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="text-muted small">등록된 이미지가 없습니다.</p>
+                                    {% endif %}
+                                </div>
+
+                                <label class="form-label fw-semibold">이미지 추가 업로드</label>
+                                <input type="file" name="images" class="form-control" multiple accept="image/*">
+                                <div class="form-text">UUID를 통해 안전한 파일명으로 서버에 저장됩니다. (다중 선택 가능)</div>
+                            </div>
+
+                            <div class="col-12 mt-5 d-flex justify-content-between">
+                                <a href="/items/{{ item.id }}" class="btn btn-light px-4">
+                                    <i class="bi bi-arrow-left"></i> 취소
+                                </a>
+                                <button type="submit" class="btn btn-warning px-5 fw-bold">
+                                    수정 내용 저장하기
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

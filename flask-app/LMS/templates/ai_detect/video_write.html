@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-sm mx-auto" style="max-width: 600px;">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Video AI 분석 요청</h4>
+        </div>
+        <div class="card-body">
+            <form id="videoForm" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label">영상 제목</label>
+                    <input type="text" name="title" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">영상 설명</label>
+                    <textarea name="content" class="form-control" rows="3" placeholder="영상에 대한 설명을 입력하세요"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">영상 파일</label>
+                    <input type="file" name="video" class="form-control" accept="video/*" required>
+                </div>
+
+                <button type="submit" id="subBtn" class="btn btn-primary w-100">AI 분석 시작</button>
+            </form>
+
+            <div id="loading" class="text-center mt-3" style="display:none;">
+                <div class="progress mb-3" style="height: 25px;">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                         role="progressbar" style="width: 0%;">0%</div>
+                </div>
+                <p id="progressMsg" class="fw-bold text-primary">AI가 영상을 분석하는 중입니다...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 세션에서 유저 ID 가져오기
+const currentUserId = "{{ session.get('user_id', 'guest') }}";
+
+// [함수] 서버에서 실시간 진행률을 가져오는 함수
+function checkProgress() {
+    fetch(`/ai-detect/progress?user_id=${currentUserId}`)
+        .then(res => res.json())
+        .then(data => {
+            const bar = document.getElementById('progressBar');
+            const msg = document.getElementById('progressMsg');
+
+            bar.style.width = data.percent + '%';
+            bar.innerText = data.percent + '%';
+            msg.innerText = data.message;
+
+            if (data.percent < 100) {
+                setTimeout(checkProgress, 1000); // 1초마다 다시 확인
+            } else {
+                msg.innerHTML = "분석 완료! 곧 결과 페이지로 이동합니다.";
+                setTimeout(() => { location.href = "/ai-detect/video"; }, 2000);
+            }
+        })
+        .catch(err => console.error("상태 체크 오류:", err));
+}
+
+// [이벤트] 폼 제출 시 비동기 전송
+document.getElementById('videoForm').onsubmit = function(e) {
+    e.preventDefault(); // 페이지 새로고침 방지
+
+    const subBtn = document.getElementById('subBtn');
+    const loadingDiv = document.getElementById('loading');
+
+    // UI 전환
+    subBtn.disabled = true;
+    this.style.display = 'none'; // 폼 숨기기
+    loadingDiv.style.display = 'block'; // 게이지 보이기
+
+    const formData = new FormData(this);
+    formData.append('user_id', currentUserId); // 서버 세션 대신 명시적으로 ID 추가
+
+    fetch('/ai-detect/video/process', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success') {
+            checkProgress(); // 성공하면 게이지 업데이트 시작
+        } else {
+            alert("서버 처리 중 오류가 발생했습니다: " + data.msg);
+            location.reload();
+        }
+    })
+    .catch(err => {
+        alert("파일 전송 중 오류가 발생했습니다.");
+        location.reload();
+    });
+};
+</script>
+{% endblock %}

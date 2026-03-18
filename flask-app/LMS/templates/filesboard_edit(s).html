@@ -1,0 +1,40 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8">
+        <div class="card border-0 shadow">
+            <div class="card-header bg-warning text-dark py-3">
+                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> 자료 수정</h5>
+            </div>
+            <div class="card-body p-4">
+                <form action="/filesboard/edit/{{ post.id }}" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">제목</label>
+                        <input type="text" name="title" class="form-control" value="{{ post.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">내용</label>
+                        <textarea name="content" class="form-control" rows="8" required>{{ post.content }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">첨부 파일 교체</label>
+                        {% if files %}
+                        <div class="alert alert-secondary py-2 small">
+                            현재 파일: {{ files[0].origin_name }}
+                        </div>
+                        {% endif %}
+                        <input type="file" name="file" class="form-control">
+                        <div class="form-text">새 파일을 선택하면 기존 파일은 교체됩니다.</div>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-warning">수정 완료</button>
+                        <a href="/filesboard/view/{{ post.id }}" class="btn btn-outline-secondary">취on소</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

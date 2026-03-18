@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">{{ post.title }}</h5>
+                </div>
+                <div class="card-body p-0 bg-black">
+                    <video id="mainVideo" controls class="w-100" style="max-height: 500px;">
+                        <source src="/uploads/{{ post.result_video_path }}" type="video/mp4">
+                    </video>
+
+                    <canvas id="thumbnailCanvas" style="display:none;"></canvas>
+                </div>
+
+                <div class="card-footer bg-white border-top-0 p-4" id="thumbnailArea" style="display:none;">
+                    <div class="d-flex align-items-center">
+                        <img id="previewThumbnail" class="img-thumbnail me-4 shadow-sm"
+                             style="width: 320px; height: 180px; object-fit: cover; border-radius: 8px;">
+
+                        <div>
+                            <span class="badge bg-primary mb-2 rounded-pill">탐지 장면 미리보기</span>
+                            <h4 class="mb-2 text-dark fw-bold" id="thumbnailTitle"># 객체 탐지 장면</h4>
+                            <p class="mb-0 text-muted fs-5" id="thumbnailTime">0.0초 시점</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-cpu"></i> AI 탐지 객체별 타임라인
+                </div>
+                <div class="card-body overflow-auto" style="max-height: 600px;" id="indexList">
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ... (이전과 동일한 변수 선언 부분 생략) ...
+    const videoElement = document.getElementById('mainVideo');
+    const indexList = document.getElementById('indexList');
+    const videoDetails = {{ details | tojson }};
+
+    // 썸네일 관련 요소
+    const thumbnailArea = document.getElementById('thumbnailArea');
+    const previewThumbnail = document.getElementById('previewThumbnail');
+    const thumbnailTitle = document.getElementById('thumbnailTitle');
+    const thumbnailTime = document.getElementById('thumbnailTime');
+    const canvas = document.getElementById('thumbnailCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // ... (이전과 동일한 objectMap 생성 및 버튼 루프 부분 생략) ...
+    // [핵심] 버튼 클릭 시 generateThumbnail 함수 호출 부분은 그대로 유지
+
+    // 1. 객체별 데이터 그룹화 (이전과 동일)
+    const objectMap = {};
+    videoDetails.forEach(detail => {
+        const objects = JSON.parse(detail.detected_objects);
+        objects.forEach(obj => {
+            if (!objectMap[obj.name]) objectMap[obj.name] = [];
+            objectMap[obj.name].push(detail.frame_number);
+        });
+    });
+
+    // 2. 화면에 객체별 버튼 생성 및 클릭 이벤트 처리 (이전과 동일)
+    for (const [name, frames] of Object.entries(objectMap)) {
+        const div = document.createElement('div');
+        div.className = 'mb-3 p-2 border-bottom';
+        div.innerHTML = `<h6 class="fw-bold text-primary"># ${name}</h6>`;
+
+        const uniqueTimeSteps = [...new Set(frames.map(f => Math.floor(f / 30)))];
+
+        uniqueTimeSteps.forEach(time => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-sm btn-outline-info m-1';
+            btn.innerText = `${time}초`;
+
+            btn.onclick = () => {
+                videoElement.currentTime = time;
+                videoElement.play();
+                generateThumbnail(name, time); // 썸네일 생성 함수 호출
+            };
+            div.appendChild(btn);
+        });
+        indexList.appendChild(div);
+    }
+
+    // 💡 [개선] 썸네일 생성 함수 (캔버스 추출 비율 조정)
+    function generateThumbnail(objectName, time) {
+        setTimeout(() => {
+            // 캔버스 크기를 기존 1/4에서 1/2로 확대하여 화질 개선
+            canvas.width = videoElement.videoWidth / 2;
+            canvas.height = videoElement.videoHeight / 2;
+
+            // 현재 영상 프레임을 캔버스에 그리기
+            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+            // 캔버스 이미지를 Base64 데이터 url로 변환하여 img 태그에 적용
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8); // 화질 설정 (0.0~1.0)
+            previewThumbnail.src = dataUrl;
+
+            // 정보 업데이트 및 썸네일 영역 표시
+            thumbnailTitle.innerText = `# ${objectName} 탐지 장면`;
+            thumbnailTime.innerText = `${time.toFixed(1)}초 시점`;
+            thumbnailArea.style.display = 'block'; // 숨겨진 영역 보이기
+
+            // 애니메이션 효과 (선택사항)
+            thumbnailArea.classList.add('animate__animated', 'animate__fadeInUp');
+        }, 250); // 추출 대기 시간 살짝 늘림 (화질 확보)
+    }
+</script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+{% endblock %}

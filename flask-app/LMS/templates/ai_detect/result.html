@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center fw-bold mb-4">🔍 AI 분석 상세 결과</h2>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-7 mb-4">
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white">분석 이미지 (Object Detection)</div>
+                <img src="/uploads/{{ img_url }}" class="card-img-top p-2" alt="분석 결과">
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white">탐지 데이터 리스트</div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>객체명</th>
+                                <th>신뢰도</th>
+                                <th>좌표 (x1, y1, x2, y2)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {# 이제 results는 방금 만든거든, DB에서 읽어온거든 형식이 같습니다 #}
+                            {% for item in results %}
+                            <tr>
+                                <td><span class="badge bg-info text-dark">{{ item.name }}</span></td>
+                                <td><strong class="text-primary">{{ item.conf }}%</strong></td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ item.bbox[0] }}, {{ item.bbox[1] }}<br>
+                                        {{ item.bbox[2] }}, {{ item.bbox[3] }}
+                                    </small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer bg-white text-end">
+                    <p class="small text-muted mb-0">총 {{ results|length }}개의 객체가 탐지되었습니다.</p>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 mt-4">
+                <a href="/ai-detect/write" class="btn btn-outline-primary">다시 분석하기</a>
+                <a href="/ai-detect" class="btn btn-secondary">내 탐지 목록으로</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

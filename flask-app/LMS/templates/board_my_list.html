@@ -1,0 +1,47 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-pencil-square"></i> 내가 작성한 게시글</h2>
+            <a href="/mypage" class="btn btn-outline-secondary">마이페이지로 돌아가기</a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th style="width: 10%">번호</th>
+                            <th style="width: 60%">제목</th>
+                            <th style="width: 30%">작성일</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in posts %}
+                        <tr class="text-center">
+                            <td>{{ post.id }}</td>
+                            <td class="text-start ps-4">
+                                <a href="/board/view/{{ post.id }}" class="text-decoration-none text-dark fw-bold">
+                                    {{ post.title }}
+                                </a>
+                            </td>
+                            <td class="text-muted small">
+                                {{ post.created_at.strftime('%Y-%m-%d %H:%M') if post.created_at }}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="py-5 text-center text-muted">
+                                아직 작성한 게시글이 없습니다. 첫 글을 남겨보세요!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-5">
+            <h2 class="fw-bold mb-3">{{ post.title }}</h2>
+            <div class="d-flex justify-content-between text-muted border-bottom pb-3 mb-4">
+                <div>
+                    <span><i class="bi bi-person"></i> {{ post.writer_name }}</span>
+                    <span class="ms-3"><i class="bi bi-calendar3"></i> {{ post.created_at }}</span>
+                </div>
+                <div>
+                    <span><i class="bi bi-eye"></i> 조회수 {{ post.view_count }}</span>
+                </div>
+            </div>
+            
+            <div class="content-area mb-5" style="min-height: 200px; line-height: 1.8;">
+                {{ post.content | replace('\n', '<br>') | safe }}
+            </div>
+
+            {% if files %}
+            <div class="attachment-box border rounded p-3 bg-light">
+                <h6 class="fw-bold mb-2"><i class="bi bi-download"></i> 첨부파일 다운로드</h6>
+                {% for file in files %}
+                <div class="d-flex align-items-center justify-content-between bg-white p-2 mb-1 border rounded">
+                    <span>{{ file.origin_name }}</span>
+                    <a href="{{ url_for('download_file', filename=file.save_name, origin_name=file.origin_name) }}"
+                        class="btn btn-sm btn-outline-primary">다운로드</a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="mt-4 text-center">
+        <a href="/filesboard" class="btn btn-secondary px-5">목록으로 돌아가기</a>
+
+        {% if session['user_id'] == post.member_id %}
+        <a href="/filesboard/edit/{{ post.id }}" class="btn btn-warning ms-2">
+            <i class="bi bi-pencil-fill"></i> 수정하기
+        </a>
+        <button class="btn btn-outline-danger ms-2" onclick="deletePost({{ post.id }})">
+            <i class="bi bi-trash"></i> 삭제하기
+        </button>
+        {% endif %}
+    </div>
+
+    <script>
+    function deletePost(id) {
+        if(confirm("정말로 이 자료를 삭제하시겠습니까? 관련 파일도 모두 삭제됩니다.")) {
+            location.href = "/filesboard/delete/" + id;
+        }
+    }
+    </script>
+</div>
+{% endblock %}

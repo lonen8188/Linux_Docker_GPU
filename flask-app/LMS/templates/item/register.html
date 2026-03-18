@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">📦 신규 상품 등록</h4>
+                </div>
+                <div class="card-body">
+                    <form action="/items/register" method="post" enctype="multipart/form-data">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">상품 코드</label>
+                                <input type="text" name="code" class="form-control" placeholder="ABC-123" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">카테고리</label>
+                                <select name="category" class="form-select">
+                                    {% for cat in categories %}
+                                    <option value="{{ cat }}">{{ cat }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">상품명</label>
+                                <input type="text" name="name" class="form-control" placeholder="상품 이름을 입력하세요" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">판매 가격 (원)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₩</span>
+                                    <input type="number" name="price" class="form-control" min="0" value="0" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">초기 재고량 (개)</label>
+                                <input type="number" name="stock" class="form-control" min="0" value="0" required>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">상품 이미지 <small class="text-muted">(여러 개 선택 가능)</small></label>
+                                <input type="file" name="images" class="form-control" multiple accept="image/*" id="imageInput">
+                                <div class="form-text">첫 번째 이미지가 대표 이미지로 사용됩니다.</div>
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <div id="imagePreview" class="d-flex flex-wrap gap-2"></div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="/items" class="btn btn-outline-secondary">취소</a>
+                            <button type="submit" class="btn btn-primary px-4">상품 등록하기</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+
+        const maxSize = 16 * 1024 * 1024; // 16MB
+        let totalSize = 0;
+
+        // 선택된 모든 파일의 용량 합계 계산
+        for (let file of e.target.files) {
+            totalSize += file.size;
+        }
+
+        if (totalSize > maxSize) {
+            alert("선택한 파일들의 총 용량이 16MB를 초과합니다. 파일을 줄여주세요.");
+            this.value = ""; // 선택된 파일 초기화
+            document.getElementById('imagePreview').innerHTML = '';
+            return;
+        }
+        const preview = document.getElementById('imagePreview');
+        preview.innerHTML = '';
+
+        [...e.target.files].forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.width = '100px';
+                img.style.height = '100px';
+                img.style.objectFit = 'cover';
+                img.className = 'img-thumbnail';
+                preview.appendChild(img);
+            }
+            reader.readAsDataURL(file);
+        });
+    });
+</script>
+{% endblock %}

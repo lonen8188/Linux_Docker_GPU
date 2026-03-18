@@ -1,0 +1,520 @@
+vm옵션에서 PCI 장치 2개 추가 gpu / audio
+
+Ubuntu에서 GPU 인식 확인
+lspci | grep -i nvidia 
+-> NVIDIA Corporation GP106 [GeForce GTX 1060]
+
+
+NVIDIA Driver 설치
+
+sudo apt update
+sudo ubuntu-drivers autoinstall | sudo apt install nvidia-driver-535
+sudo reboot
+
+nvidia-smi
+
+실패시 조치
+기존 NVIDIA 잔여 패키지 제거
+sudo apt purge nvidia*
+sudo apt autoremove
+sudo apt update
+
+sudo apt install nvidia-driver-535
+
+sudo reboot
+
+nvidia-smi
+
+재부팅 스냅샷 -> 안되서 재설치
+sudo ubuntu-drivers autoinstall
+
+우분투 22 설치
+
+lspci | grep -i nvidia
+-> 03:00.0 VGA 
+-> 03:00.1 Audio
+
+sudo apt update
+ubuntu-drivers devices
+
+sudo apt install nvidia-driver-550
+sudo reboot
+
+nvidia-smi
+
+Docker GPU 활성화
+
+NVIDIA Container Toolkit 저장소 추가
+distribution=ubuntu22.04
+
+sudo apt  install curl
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+curl -fsSL https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+sudo apt update
+
+sudo apt install nvidia-container-toolkit
+
+도커설치
+sudo apt install -y docker.io
+
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo systemctl restart docker
+sudo systemctl status docker
+
+docker --version
+
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+
+sudo usermod -aG docker $USER
+sudo reboot
+
+docker run --rm hello-world
+sudo docker run --rm --gpus all nvidia/cuda:12.2.2-base-ubuntu22.04 nvidia-smi
+-------- 도커에 gpu연결 완료 ------------------------
+
+windows sql 추출
+워크벤치 server -> data export -> sql 파일 저장
+
+파워셀 관리자
+저장 경로로 이동 
+scp .\lms.sql ai320@192.168.0.12:/home/ai320
+
+리눅스
+컴포즈2로 변환 sudo apt remove docker-compose
+
+기존 Docker 싹 제거
+sudo apt remove docker docker-engine docker.io containerd runc docker-compose -y
+sudo rm -rf /var/lib/docker
+sudo rm -rf /var/lib/containerd
+
+Docker 공식 repo 등록 (핵심)
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+
+sudo install -m 0755 -d /etc/apt/keyrings
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+echo \
+"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+https://download.docker.com/linux/ubuntu \
+$(. /etc/os-release && echo $VERSION_CODENAME) stable" | \
+sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+최신 Docker + Compose 설치
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+권한 설정 (편하게 쓰기)
+sudo usermod -aG docker $USER
+sudo reboot 
+
+------------------ docker명령어 정리---------------------------------
+docker compose up  전체 실행 (기본)
+docker compose up -d  백그라운드 실행
+
+코드 수정 후 재빌드
+docker compose build
+docker compose up -d
+
+완전 초기화 빌드 (에러 날 때)
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+
+상태 확인
+docker compose ps
+
+로그 보기
+docker compose logs -f flask
+docker compose logs -f
+
+찌꺼기 정리 (용량 터질 때)
+docker system prune -a
+
+컨테이너 접속
+docker exec -it flask bash
+nvidia-smi
+
+종료
+docker compose down (컨테이너 종료 + 네트워크 삭제)
+
+
+
+mkdir ~/yolo-server
+cd ~/yolo-server
+mkdir mysql-init 
+이곳에 sql 파일 옮기기
+yolo-server 아래 docker-compose.yml 파일 생성 후
+내용
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Mbc320!!
+      MYSQL_DATABASE: lms
+      MYSQL_USER: mbc
+      MYSQL_PASSWORD: 1234
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d  -- 컨테이너 처음 실행 시 자동으로 SQL 실행됨
+
+volumes:
+  mysql_data:
+
+sql 상단에 
+CREATE DATABASE IF NOT EXISTS lms;
+CREATE USER 'mbc'@'%' IDENTIFIED BY '1234';
+GRANT ALL PRIVILEGES ON lms.* TO 'mbc'@'%';
+FLUSH PRIVILEGES;
+
+USE lms;
+
+실행
+cd mysql-init/
+sudo docker-compose up -d
+
+확인
+sudo docker logs mysql
+
+컴포즈 없이 db 넣기
+sudo docker exec -i mysql mysql -u root -p < ~/yolo-server/mysql-init/lms.sql
+
+컨테이너 및 볼륨 삭제
+sudo docker-compose down -v
+sudo docker-compose up -d
+sudo docker logs mysql
+sql 위치 확인
+ls ~/yolo-server/mysql-init
+
+db접속 테스트
+sudo docker exec -it mysql mysql -u mbc -p
+
+SHOW DATABASES;
+USE lms;
+SHOW TABLES;
+
+---------------db연결 완료-------------------------------------
+
+
+github에 있는 코드 가져와 도커에 연결하기
+
+git clone -b master https://github.com/lonen8188/Python26AIX.git flask-app
+/yolo-server/flask-app/ 이동
+mkdir uploads 
+sudo chmod -R 777 /home/ai320/yolo-server/flask-app/uploads/
+sudo chown -R ai320:ai320 /home/ai320/yolo-server/flask-app/uploads/
+
+docker-compose.yml에 Flask 추가
+
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Mbc320!!
+      MYSQL_DATABASE: lms
+      MYSQL_USER: mbc
+      MYSQL_PASSWORD: 1234
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+
+  flask:
+    build: ./flask-app
+    container_name: flask
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:
+
+
+윈도우에 설치된 환경설정 pip 설치 파일 목록 추출
+pip freeze > requirements.txt
+
+/flask-app/Dockerfile 생성 후 하단내용 붙이기
+
+FROM python:3.11
+
+# 작업 디렉토리
+WORKDIR /app
+
+# requirements 설치 (레이어 캐시 활용)
+COPY requirements.txt .
+RUN python -m pip install --upgrade pip \
+    && pip install --no-cache-dir --prefer-binary -r requirements.txt
+
+# 앱 코드 복사
+COPY . .
+
+# Python이 LMS 패키지 인식하도록 설정
+ENV PYTHONPATH=/app
+
+# Flask 실행
+CMD ["python", "LMS/app.py"]
+
+
+
+실행
+cd ~/yolo-server
+sudo docker-compose up -d --build
+
+확인
+sudo docker logs flask
+
+sudo docker ps
+
+컨테이너 중단 
+docker-compose down
+볼륨 및 네트워크 제거
+docker system prune -a --volumes
+다시 빌드 후 실행
+docker-compose up --build
+특정 컨테이너만 삭제 후 재생성
+docker rm -f flask
+docker-compose up --build
+
+docker-compose build --no-cache flask
+docker-compose up
+
+컨테이너 안에 들어가서 확인 용
+docker exec -it flask bash
+
+기존 컨테이너 + 이미지 완전 삭제
+docker-compose down
+docker rm -f flask
+docker rmi flask-app_flask
+
+캐시 없이 강제 빌드
+docker-compose build --no-cache
+
+안되면 이미지까지 제거
+docker-compose down --rmi all --volumes
+docker-compose build --no-cache
+docker-compose up
+
+------------------컴포즈1으로 오류 발생 ------------------------
+컴포즈2로 변환 sudo apt remove docker-compose
+
+기존 Docker 싹 제거
+sudo apt remove docker docker-engine docker.io containerd runc docker-compose -y
+sudo rm -rf /var/lib/docker
+sudo rm -rf /var/lib/containerd
+
+Docker 공식 repo 등록 (핵심)
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+
+sudo install -m 0755 -d /etc/apt/keyrings
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+echo \
+"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+https://download.docker.com/linux/ubuntu \
+$(. /etc/os-release && echo $VERSION_CODENAME) stable" | \
+sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+최신 Docker + Compose 설치
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+권한 설정 (편하게 쓰기)
+sudo usermod -aG docker $USER
+sudo reboot 
+
+확인 
+ai320@ai320-VMware7-1:/$ sudo docker --version
+[sudo] password for ai320: 
+Docker version 29.3.0, build 5927d80
+ai320@ai320-VMware7-1:/$ sudo docker compose version
+Docker Compose version v5.1.0
+
+기존 찌꺼기 제거
+sudo docker compose down -v
+sudo docker system prune -a -f
+
+cd ~/yolo-server
+sudo docker compose up --build
+
+docker-compose.yml
+
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Mbc320!!
+      MYSQL_DATABASE: lms
+      MYSQL_USER: mbc
+      MYSQL_PASSWORD: 1234
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+
+  flask:
+    build: ./flask-app
+    container_name: flask
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+
+    # 코드 실시간 반영
+    volumes:
+      - ./flask-app:/app
+      - ./flask-app/uploads:/app/uploads
+
+    # GPU 설정 (Compose v2 핵심)
+    deploy: {}
+    gpus: all
+
+volumes:
+  mysql_data:
+
+
+requirements.txt
+
+Flask==3.1.2
+PyMySQL==1.1.2
+cryptography==46.0.4
+
+numpy==2.2.6
+opencv-python-headless==4.12.0.88
+Pillow==12.0.0
+
+ultralytics==8.4.19
+
+requests==2.32.5
+yt-dlp==2026.3.3
+
+
+requirements 수정했으면
+docker compose build
+docker compose up 
+pip만 재설치 됨
+
+
+Dockerfile
+
+FROM python:3.11
+
+WORKDIR /app
+
+# 1. OS 패키지
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. requirements 먼저 복사
+COPY requirements.txt .
+
+# 3. torch (무거운거 먼저, 캐시 유지)
+RUN pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 \
+    --index-url https://download.pytorch.org/whl/cu118
+
+# 4. 나머지 설치
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 5. 코드 복사 (여기 변경돼도 pip 안 다시 깔림)
+COPY . .
+
+ENV PYTHONPATH=/app
+
+CMD ["python", "LMS/app.py"]
+
+-=------------------------ 플라스크 도커에서 gpu 확인 ------------------
+docker exec -it flask bash
+watch -n 0.2 nvidia-smi
+
+
+--------------도커 결론- ---------------------
+결론
+
+👉 소스코드만 수정했으면 docker compose up만 하면 됨 (O)
+👉 단, 조건 있음
+
+🔍 지금 너 환경 기준
+volumes:
+  - ./flask-app:/app
+
+👉 이거 때문에:
+
+👉 코드가 컨테이너에 실시간 반영됨
+
+✅ 그래서 경우별 정리
+1️⃣ Python 코드만 수정 (Flask, YOLO 등)
+docker compose up -d
+
+👉 또는 그냥 놔둬도 됨 (이미 반영됨)
+
+✔ 이유:
+
+볼륨 마운트 → 코드 즉시 반영
+
+2️⃣ requirements.txt 수정 (pip 추가)
+docker compose build
+docker compose up -d
+
+👉 이유:
+
+pip는 이미지 안에 설치됨 → 재빌드 필요
+
+3️⃣ Dockerfile 수정
+docker compose build --no-cache
+docker compose up -d
+4️⃣ GPU / 환경 설정 바꿈
+docker compose down
+docker compose up -d
+🚨 중요한 포인트
+❗ Flask 재시작 필요할 수도 있음
+
+코드만 바꿨는데 반영 안 되면:
+
+docker compose restart flask
+🔥 추천 개발 루틴
+# 코드 수정 후
+docker compose restart flask
+
+👉 이게 제일 빠름
+
+🎯 한 줄 정리
+
+👉 코드만 수정 = restart
+👉 라이브러리 변경 = build
+
+💣 너한테 딱 맞는 공식
+코드 → restart
+pip → build
+Dockerfile → no-cache build

@@ -1,0 +1,91 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-film"></i> AI 영상 분석 목록</h2>
+        <a href="/ai-detect/video/write" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> 새 영상 분석
+        </a>
+    </div>
+
+    <div class="row">
+        {% if posts %}
+            {% for post in posts %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0 video-card">
+                    <div class="position-relative">
+                        {% if post.status == 'COMPLETED' %}
+                            <video class="card-img-top preview-video" muted onmouseover="this.play()" onmouseout="this.pause(); this.currentTime=0;">
+                                <source src="/uploads/{{ post.result_video_path }}" type="video/mp4">
+                            </video>
+                            <div class="video-badge">
+                                <span class="badge bg-success">분석 완료</span>
+                            </div>
+                        {% elif post.status == 'PROCESSING' %}
+                            <div class="d-flex align-items-center justify-content-center bg-dark text-white" style="height: 200px;">
+                                <div class="text-center">
+                                    <div class="spinner-border spinner-border-sm text-info mb-2"></div>
+                                    <p class="small mb-0">분석 중...</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
+                                <i class="bi bi-play-circle-fill text-secondary display-4"></i>
+                            </div>
+                            <div class="video-badge">
+                                <span class="badge bg-warning text-dark">대기 중</span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="card-body">
+                        <h5 class="card-title text-truncate fw-bold">{{ post.title }}</h5>
+                        <p class="card-text text-muted small text-truncate-2">{{ post.content or '설명이 없습니다.' }}</p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <small class="text-muted"><i class="bi bi-clock"></i> {{ post.created_at.strftime('%Y-%m-%d') if post.created_at }}</small>
+                            <a href="/ai-video/view/{{ post.id }}" class="btn btn-sm btn-outline-primary {% if post.status != 'COMPLETED' %}disabled{% endif %}">
+                                결과 보기
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-camera-video text-muted display-1"></i>
+                <p class="mt-3 text-muted">등록된 영상 분석 내역이 없습니다.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .video-card {
+        transition: transform 0.2s;
+        overflow: hidden;
+    }
+    .video-card:hover {
+        transform: translateY(-5px);
+    }
+    .preview-video {
+        height: 200px;
+        object-fit: cover;
+        background-color: #000;
+    }
+    .video-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 10;
+    }
+    .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}

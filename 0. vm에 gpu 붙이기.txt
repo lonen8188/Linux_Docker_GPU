@@ -1,0 +1,65 @@
+구조
+
+딥러닝 VM 구성은 보통 이렇게 됩니다.
+
+BIOS에서 IOMMU 활성화 (가장 먼저)
+
+서버 재부팅 후 BIOS 들어가서 설정합니다.
+
+Intel CPU이면
+
+Intel VT-d
+
+ESXi Host
+ ├ Linux VM (CUDA / PyTorch / TensorFlow)  ← GPU 연결
+ ├ Linux VM (CPU 작업)
+ └ Windows VM
+
+GTX1060 → 딥러닝 VM 1개만 사용 가능
+
+2️⃣ ESXi에서 GPU Passthrough 설정
+
+ESXi Host Client 접속
+
+https://esxi-ip
+
+경로
+
+Host
+ → Manage
+ → Hardware
+ → PCI Devices
+
+여기서
+
+NVIDIA GTX1060
+
+선택 → Toggle passthrough
+
+그 다음
+
+ESXi 재부팅
+3️⃣ VM에 GPU 추가
+
+딥러닝용 Linux VM 설정
+
+Edit Settings
+ → Add New Device
+ → PCI Device
+ → NVIDIA GTX1060 선택
+
+권장 VM 설정
+
+CPU : 8 core 이상
+RAM : 16GB 이상
+Disk : 100GB 이상
+Firmware : EFI
+4️⃣ 리눅스에서 GPU 확인
+
+VM 안에서
+
+lspci | grep -i nvidia
+
+정상 예
+
+NVIDIA Corporation GP106

@@ -1,0 +1,37 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8">
+        <div class="card border-0 shadow">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0"><i class="bi bi-cloud-arrow-up"></i> 새로운 자료 등록</h5>
+            </div>
+            <div class="card-body p-4">
+                <form action="/filesboard/write" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">자료명(제목)</label>
+                        <input type="text" name="title" class="form-control" placeholder="제목을 입력하세요" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">상세 설명</label>
+                        <textarea name="content" class="form-control" rows="8" placeholder="자료에 대한 설명을 적어주세요" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">첨부 파일</label>
+                        <div class="input-group">
+<!--                        <input type="file" name="file" class="form-control" id="inputFile"> 단일파일 업로드용 -->
+                            <input type="file" name="files" class="form-control" multiple> <!-- 다중파일 업로드용 -->
+                        </div>
+                        <div class="form-text mt-2"><i class="bi bi-info-circle"></i> 최대 16MB까지 업로드 가능합니다.</div>
+                    </div>
+                    <hr>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary px-4">등록하기</button>
+                        <a href="/filesboard" class="btn btn-outline-secondary px-4">취소</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

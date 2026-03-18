@@ -1,0 +1,286 @@
+전체 구조 (한 번에 이해)
+1. VM + GPU 세팅
+2. NVIDIA 드라이버 설치
+3. Docker + GPU 연결
+4. DB(MySQL) 구성
+5. Flask + YOLO 코드 배포
+6. Docker Compose 실행
+7. GPU 확인
+1️⃣ VM + GPU 설정
+
+✔ VMware에서
+
+PCI 장치 2개 추가
+
+GPU
+
+Audio
+
+✔ 확인
+
+lspci | grep -i nvidia
+-> NVIDIA Corporation GP106 [GeForce GTX 1060]
+👉 나오면 OK
+
+2 NVIDIA 드라이버 설치
+sudo apt update
+sudo ubuntu-drivers autoinstall
+sudo reboot
+
+✔ 확인
+
+nvidia-smi
+❌ 안될 때
+sudo apt purge nvidia*
+sudo apt autoremove
+sudo apt update
+sudo apt install nvidia-driver-550
+sudo reboot
+
+3 Docker + GPU 연결 (핵심)
+3-1. NVIDIA Container Toolkit
+distribution=ubuntu22.04
+
+sudo apt install curl
+
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+curl -fsSL https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+sudo apt update
+sudo apt install nvidia-container-toolkit
+
+3-2. Docker 설치
+sudo apt install -y docker.io
+sudo systemctl start docker
+sudo systemctl enable docker
+
+3-3. GPU 활성화
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+
+3-4. 테스트 (중요)
+docker run --rm --gpus all nvidia/cuda:12.2.2-base-ubuntu22.04 nvidia-smi
+
+👉 나오면 GPU 연결 성공
+
+4 MySQL 구성
+mkdir ~/yolo-server
+cd ~/yolo-server
+mkdir mysql-init
+
+👉 SQL 파일 넣기
+
+docker-compose (DB만)
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: Mbc320!!
+      MYSQL_DATABASE: lms
+      MYSQL_USER: mbc
+      MYSQL_PASSWORD: 1234
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+
+volumes:
+  mysql_data:
+
+실행
+docker compose up -d
+docker logs mysql
+
+5 Flask + YOLO 코드
+git clone -b master https://github.com/lonen8188/Python26AIX.git flask-app
+cd flask-app
+mkdir uploads
+chmod -R 777 uploads
+
+flask-app 안에서
+touch requirements.txt
+
+# pip로 설치할 목록
+Flask==3.1.2
+PyMySQL==1.1.2
+cryptography==46.0.4
+
+numpy==1.26.4
+opencv-python-headless==4.7.0.72
+Pillow==10.3.0
+
+ultralytics==8.0.196
+
+requests==2.32.5
+yt-dlp==2026.3.3
+
+
+6 Dockerfile (최종 안정 버전) -> 주의사항 모듈과 패키지를 맞춰야 함
+
+FROM python:3.11
+
+WORKDIR /app
+
+# OS 패키지
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# requirements
+COPY requirements.txt .
+
+# torch 먼저 (캐시용 핵심)
+RUN pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 \
+    --index-url https://download.pytorch.org/whl/cu118
+
+# 나머지
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 코드
+COPY . .
+
+ENV PYTHONPATH=/app
+
+CMD ["python", "LMS/app.py"]
+
+7 docker-compose (최종 완성)
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Mbc320!!
+      MYSQL_DATABASE: lms
+      MYSQL_USER: mbc
+      MYSQL_PASSWORD: 1234
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+
+  flask:
+    build: ./flask-app
+    container_name: flask
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+
+    volumes:
+      - ./flask-app:/app
+      - ./flask-app/uploads:/app/uploads
+
+    # 핵심
+    gpus: all
+
+volumes:
+  mysql_data:
+
+
+8 실행 명령어 정리
+기본 실행
+docker compose up -d
+재빌드
+docker compose build
+docker compose up -d
+완전 초기화
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+
+
+9 확인
+컨테이너 접속
+docker exec -it flask bash
+GPU 확인
+watch -n 0.2 nvidia-smi
+
+10. 최종 핵심 요약
+
+👉 GPU 쓰려면 3개 다 맞아야 함
+
+VM GPU 연결 ✅
+nvidia-smi 정상 ✅
+docker gpus: all ✅
+
+----------------------------- 도커 프로세스 확인------------------------------------------------------------------------------------
+ sudo docker ps
+[sudo] password for ai320: 
+CONTAINER ID   IMAGE               COMMAND                  CREATED         STATUS         PORTS                                                    NAMES
+a415134d140b   yolo-server-flask   "python LMS/app.py"      7 minutes ago   Up 7 minutes   0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp              flask
+fa0d411ccabb   mysql:8.0           "docker-entrypoint.s…"   7 minutes ago   Up 7 minutes   0.0.0.0:3306->3306/tcp, [::]:3306->3306/tcp, 33060/tcp   mysql
+----------------------- 플라스크 도커에서 gpu 확인 ------------------
+docker exec -it flask bash
+watch -n 0.2 nvidia-smi
+
+------------------------------------
+
+👉 소스코드만 수정했으면 docker compose up만 하면 됨 (O)
+👉 단, 조건 있음
+
+🔍 지금 환경 기준
+volumes:
+  - ./flask-app:/app
+
+👉 이거 때문에:
+
+👉 코드가 컨테이너에 실시간 반영됨
+
+✅ 그래서 경우별 정리
+
+1 Python 코드만 수정 (Flask, YOLO 등)
+docker compose up -d
+
+👉 또는 그냥 놔둬도 됨 (이미 반영됨)
+
+✔ 이유:
+볼륨 마운트 → 코드 즉시 반영
+
+2 requirements.txt 수정 (pip 추가)
+docker compose build
+docker compose up -d
+
+👉 이유:
+pip는 이미지 안에 설치됨 → 재빌드 필요
+
+3 Dockerfile 수정
+docker compose build --no-cache
+docker compose up -d
+
+4 GPU / 환경 설정 바꿈
+docker compose down
+docker compose up -d
+🚨 중요한 포인트
+❗ Flask 재시작 필요할 수도 있음
+
+코드만 바꿨는데 반영 안 되면:
+docker compose restart flask
+
+🔥 추천 개발 루틴
+
+# 코드 수정 후
+docker compose restart flask
+
+👉 이게 제일 빠름
+
+🎯 한 줄 정리
+
+👉 코드만 수정 = restart
+👉 라이브러리 변경 = build
+
+💣 너한테 딱 맞는 공식
+코드 → restart
+pip → build
+Dockerfile → no-cache build

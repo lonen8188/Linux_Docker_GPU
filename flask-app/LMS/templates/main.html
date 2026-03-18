@@ -1,0 +1,42 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="py-5 text-center">
+    <h1 class="display-5 fw-bold text-body-emphasis">학습 관리 시스템</h1>
+    <p class="lead mb-4">게시판 소통부터 성적 관리까지 한 번에 처리하세요.</p>
+</div>
+
+<div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+    <div class="col d-flex align-items-start">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h3 class="fs-2 text-body-emphasis">자유게시판</h3>
+                <p>커뮤니티 공간입니다. 자유롭게 의견을 나누고 정보를 공유해 보세요.</p>
+                <a href="/board" class="btn btn-primary">게시판 바로가기</a>
+            </div>
+        </div>
+    </div>
+    <div class="col d-flex align-items-start">
+        <div class="card h-100 shadow-sm border-success">
+            <div class="card-body">
+                <h3 class="fs-2 text-success">성적관리</h3>
+                <p>국어, 영어, 수학 성적을 입력하고 등급과 통계를 확인하세요.</p>
+                <a href="/score/my" class="btn btn-success">성적표 확인</a>
+            </div>
+        </div>
+    </div>
+    <div class="col d-flex align-items-start">
+        <div class="card h-100 shadow-sm border-info">
+            <div class="card-body">
+                <h3 class="fs-2 text-info">회원관리</h3>
+                <p>사용자 정보 및 권한을 관리합니다. 현재 등급을 확인해 보세요.</p>
+                {% if session.get('user_id') %}
+                    <a href="/mypage" class="btn btn-info text-white">마이페이지</a>
+                {% else %}
+                    <a href="/login" class="btn btn-info text-white">로그인하기</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

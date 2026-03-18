@@ -1,0 +1,69 @@
+ifconfig
+sudo apt install net-tools
+
+
+ifconfig
+
+sudo apt update
+sudo apt install openssh-server -y
+
+sudo systemctl status ssh  
+	Active: active (running)
+
+sudo systemctl enable ssh
+sudo ufw allow 22/tcp
+
+sudo ss -ntlp | grep 22
+	LISTEN 0 128 0.0.0.0:22
+
+sudo ufw allow ssh
+sudo ufw status
+sudo ufw reload
+sudo ufw disable
+sudo ufw enable
+sudo ufw status
+	Status: active
+
+sudo ufw status numbered
+
+ps : ssh kkw@192.168.0.120 
+	yes -> 암호
+
+vsCode 
+Ctrl + Shift + P
+> Remote-SSH: 192.168.0.199
+
+ssh kkw@192.168.0.120
+C:\Users\사용자이름\.ssh\config 저장 후 연결(connect)
+Host ubuntu-vm
+    HostName 192.168.0.199
+    User kkw
+
+
+상단 터미널 -> 새 터미널
+리눅스 폴더 보임
+
+
+
+sudo apt update
+sudo apt upgrade -y
+sudo apt install build-essential dkms
+ubuntu-drivers devices
+sudo ubuntu-drivers autoinstall | sudo apt install nvidia-driver-535
+sudo reboot
+
+sudo apt install open-vm-tools open-vm-tools-desktop -y
+sudo systemctl start open-vm-tools
+sudo systemctl enable open-vm-tools
+
+nvidia-smi
+sudo apt install python3-pip -y
+pip install torch torchvision torchaudio
+python3
+nvidia-smi
+
+sudo reboot
+
+
+
+nvidia-smi

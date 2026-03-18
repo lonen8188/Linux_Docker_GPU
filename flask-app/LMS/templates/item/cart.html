@@ -1,0 +1,88 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4"><i class="bi bi-cart3"></i> 장바구니</h2>
+
+    {% if cart_items %}
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>상품</th>
+                            <th>정보</th>
+                            <th>수량</th>
+                            <th>가격</th>
+                            <th>삭제</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in cart_items %}
+                        <tr>
+                            <td style="width: 100px;">
+                                {% if item.main_image %}
+                                    <img src="/uploads/{{ item.main_image }}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                                {% else %}
+                                    <img src="http://placehold.co/80x80" class="img-thumbnail">
+                                {% endif %}
+                            </td>
+                            <td>
+                                <h6 class="mb-0">{{ item.name }}</h6>
+                                <small class="text-muted">코드: {{ item.code }}</small>
+                            </td>
+                            <td>{{ item.order_qty }}개</td>
+                            <td>{{ "{:,}".format(item.subtotal) }}원</td>
+                            <td>
+                                <a href="/cart/delete/{{ item.id }}" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">주문 요약</h5>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>상품 총 합계</span>
+                        <span class="fw-bold">{{ "{:,}".format(total_price) }}원</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>배송비</span>
+                        <span class="text-success">무료</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="fs-5">최종 결제 금액</span>
+                        <span class="fs-5 fw-bold text-primary">{{ "{:,}".format(total_price) }}원</span>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <form action="/order/checkout" method="post">
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    주문하기
+                                </button>
+                                <a href="/items" class="btn btn-outline-secondary">쇼핑 계속하기</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-cart-x display-1 text-muted"></i>
+        <p class="fs-4 mt-3 text-muted">장바구니가 비어 있습니다.</p>
+        <a href="/items" class="btn btn-primary btn-lg mt-3">상품 보러가기</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
