@@ -1,0 +1,139 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-lg bg-dark text-white border-0">
+                <div class="card-header bg-primary d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-eye"></i> AI Real-time Monitor</span>
+                    <span id="status" class="badge bg-success">Connected</span>
+                </div>
+                <div class="card-body p-0 text-center" style="background: #000;">
+                    <img id="cameraView" style="width: 100%; min-height: 450px; object-fit: contain;">
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-bold bg-light">감시 설정</div>
+                <div class="card-body">
+                    <label class="form-label small text-muted">감시할 객체명 (예: person, laptop, cell phone)</label>
+                    <div class="input-group">
+                        <input type="text" id="targetInput" class="form-control" placeholder="객체 입력...">
+                        <button class="btn btn-danger" onclick="setTarget()">설정</button>
+                    </div>
+                    <div id="currentTarget" class="mt-2 text-primary small fw-bold">현재 감시 중: 없음</div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold bg-light d-flex justify-content-between">
+                    <span>탐지 로그 (Alert)</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearLogs()" style="font-size: 0.7rem;">비우기</button>
+                </div>
+                <div id="alertLog" class="card-body p-0" style="height: 380px; overflow-y: auto; background: #f8f9fa;">
+                    <div class="text-center text-muted mt-5 small" id="emptyMsg">탐지 기록이 없습니다.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<script>
+    // 1. 소켓 연결 설정 (웹소켓 전용 모드)
+    const socket = io({
+        transports: ['websocket'],
+        upgrade: false
+    });
+
+    // 2. 실시간 AI 프레임 수신
+    socket.on('ai_frame', function(data) {
+        if (data.image) {
+            const imgTag = document.getElementById("cameraView");
+            if(imgTag) imgTag.src = "data:image/jpeg;base64," + data.image;
+        }
+    });
+
+    // 3. 탐지 알림 수신 및 화면 출력 (중요!)
+    socket.on('detection_alert', function(data) {
+        const alertLog = document.getElementById("alertLog");
+        const emptyMsg = document.getElementById("emptyMsg");
+        
+        if (emptyMsg) emptyMsg.style.display = 'none';
+
+        // 새로운 로그 항목 생성
+        const logEntry = document.createElement("div");
+        logEntry.className = "p-2 border-bottom bg-white fw-bold text-dark";
+        logEntry.style.fontSize = "0.85rem";
+        logEntry.style.borderLeft = "4px solid #dc3545"; // 왼쪽 빨간 테두리 강조
+        
+        logEntry.innerHTML = `
+            <span class="badge bg-danger me-1">ALERT</span>
+            <span class="text-muted small">[${data.time}]</span>
+            <span class="ms-1">${data.label.toUpperCase()}</span> 포착됨!
+        `;
+
+        // 최신 로그를 가장 위에 추가
+        alertLog.prepend(logEntry);
+
+        // 최대 20개까지만 유지
+        if (alertLog.children.length > 20) {
+            alertLog.removeChild(alertLog.lastChild);
+        }
+    });
+
+    // 4. 감시 타겟 설정
+    function setTarget() {
+        const input = document.getElementById("targetInput");
+        const display = document.getElementById("currentTarget");
+        const target = input.value.trim().toLowerCase();
+
+        if (!target) {
+            alert("감시할 객체명을 입력하세요!");
+            return;
+        }
+
+        // 서버로 전송
+        socket.emit('set_detection_target', { target: target });
+
+        // 화면 UI 업데이트
+        display.innerText = "현재 감시 중: " + target;
+        display.classList.replace("text-primary", "text-danger");
+        
+        input.value = "";
+        console.log("Target updated to:", target);
+    }
+
+    // 엔터키 지원
+    document.getElementById("targetInput").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") setTarget();
+    });
+
+    // 로그 비우기 기능
+    function clearLogs() {
+        const alertLog = document.getElementById("alertLog");
+        alertLog.innerHTML = '<div class="text-center text-muted mt-5 small" id="emptyMsg">탐지 기록이 없습니다.</div>';
+    }
+
+    // 연결 상태 모니터링
+    socket.on('connect', () => {
+        document.getElementById("status").className = "badge bg-success";
+        document.getElementById("status").innerText = "Connected";
+    });
+
+    socket.on('disconnect', () => {
+        document.getElementById("status").className = "badge bg-secondary";
+        document.getElementById("status").innerText = "Disconnected";
+    });
+</script>
+
+<style>
+    /* 로그 박스 스크롤바 디자인 (선택) */
+    #alertLog::-webkit-scrollbar { width: 6px; }
+    #alertLog::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+    .alert-item { transition: all 0.3s ease; }
+</style>
+{% endblock %}

@@ -1401,6 +1401,44 @@ def process_youtube_route():
 def index():
     return render_template('main.html')
 
+# 스트림 처리와 스레드 처리용으로 변환 
+# if __name__ == '__main__':
+#    #app.run(debug=True)
+#    app.run(host='0.0.0.0', port=5000, debug=True)
+
+######################################################### ipcam 스트림 처리용 #####################################################
+from flask_socketio import SocketIO
+from LMS.service.AiStreamService import AiStreamService
+import os
+
+
+# 2. async_mode='eventlet' 명시 (실시간 스트리밍 안정성 확보)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+
+# --- AI 탐지 라우트 ---
+@app.route('/ai-detect/aistream')
+def ai_stream():
+    return render_template('ai_detect/ai_stream.html')
+
+def run_ai_logic():
+    # RTSP 주소 확인
+    RTSP_URL = "rtsp://admin:Mbc320!!@192.168.0.14:554/stream1"
+    print(f"[SYSTEM] AI Background Task Start")
+    AiStreamService.run_rtsp_stream(socketio, RTSP_URL)
+
+@socketio.on('connect')
+def handle_connect():
+    # 사용자가 접속하면 AI 스트림 시작
+    socketio.start_background_task(run_ai_logic)
+
+@socketio.on('set_detection_target')
+def handle_target(data):
+    target = data.get('target', '')
+    AiStreamService.set_target(target)
+
+# ---------------------------------------------------------
+# 4. 서버 실행
+# ---------------------------------------------------------
 if __name__ == '__main__':
-    #app.run(debug=True)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # debug=False로 해야 라우트 꼬임이 없습니다.
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False, use_reloader=False)
